@@ -1,5 +1,6 @@
 from setuptools import setup, Extension
 from os import path
+import numpy as np
 
 MAJOR = 0
 MINOR = 2
@@ -7,21 +8,15 @@ MICRO = 8
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
-class get_numpy_include(object):
-    """Returns Numpy's include path with lazy import"""
-
-    def __str__(self):
-        import numpy
-        return numpy.get_include()
-
-
 # Get the long description from the README file
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst')) as f:
     long_description = f.read()
 
-extensions = [Extension("pyFTracks.annealing", ["pyFTracks/annealing.pyx"]),
-              Extension("pyFTracks.thermal_history", ["pyFTracks/thermal_history.pyx"])]
+extensions = [
+    Extension("pyFTracks.annealing", ["pyFTracks/annealing.pyx"]),
+    Extension("pyFTracks.thermal_history", ["pyFTracks/thermal_history.pyx"])
+]
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
@@ -32,12 +27,15 @@ setup(
         'setuptools>=18.0',
         'numpy',
         'cython'
-        ],
+    ],
     version=VERSION,
     description='Fission Track Modelling and Analysis with Python',
     ext_modules=extensions,
     include_package_data=True,
-    include_dirs=[get_numpy_include()],
+
+    # FIX: correct way to pass NumPy include directory
+    include_dirs=[np.get_include()],
+
     long_description=long_description,
     url='https://github.com/rbeucher/pyFTracks.git',
     author='Romain Beucher',
@@ -60,5 +58,4 @@ setup(
     packages=["pyFTracks", "pyFTracks/ressources", "pyFTracks/radialplot"],
     keywords='geology thermochronology fission-tracks',
     install_requires=requirements,
-
 )
