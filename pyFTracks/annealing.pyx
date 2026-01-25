@@ -450,9 +450,9 @@ class Ketcham2007(AnnealingModel):
     _kinetic_conversion = {"ETCH_PIT_LENGTH": convert_Dpar_to_rmr0,
                           "CL_PFU": convert_Cl_pfu_to_rmr0,
                           "RMR0": lambda x: x}
-
-    def __init__(self, kinetic_parameters: bool, use_projected_track: bool =False,
-                 use_Cf_irradiation: bool=False):
+    # Align API with Ketcham1999 and pyFTracks documentation (kinetic_parameters as dict).
+    def __init__(self, kinetic_parameters: dict, use_projected_track: bool =False,
+                use_Cf_irradiation: bool=False):
 
         super(Ketcham2007, self).__init__(
               kinetic_parameters,
