@@ -555,7 +555,11 @@ class Ketcham2007(FanningCurviLinear):
                           "CL_PFU": convert_Cl_pfu_to_rmr0,
                           "RMR0": lambda x: x}
 
-    def __init__(self, kinetic_parameters: bool, use_projected_track: bool =False,
+    # BUGFIX (pyFTracks-legacy):
+    # kinetic_parameters was incorrectly typed as bool in Cython.
+    # This causes dict -> bool coercion and breaks .keys().
+    # Must be dict to match Ketcham1999 and pyFTracks API.
+    def __init__(self, kinetic_parameters: dict, use_projected_track: bool =False,
                  use_Cf_irradiation: bool=False):
         
         self._kinetic_parameters = kinetic_parameters
