@@ -6,6 +6,7 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport exp, pow, log
 from pyFTracks.structures import Sample
+from pyFTracks.rci_engine import rci_annealing
 
 _MIN_OBS_R = 0.13
 _MIN_OBS_RCMOD = 0.53
@@ -76,8 +77,6 @@ cpdef calculate_mean_length_ketcham2003(double length, int usedCf):
         return -7.6425 + 1.4423 * length 
     else:
         return -19.8339 + 3.0619 * length -0.0535 * length * length
-
-
 
 _seconds_in_megayears = 31556925974700
 
@@ -663,3 +662,159 @@ class Ketcham2007(FanningCurviLinear):
         equivTime = pow(1.0 / reduced_length - 1.0, a)
         equivTime = (equivTime - c0) / c1
         return exp(equivTime * (log(temperature) - c3) + c2)
+
+
+class RCIModel(AnnealingModel):
+    """
+    RCI annealing model — Continuous Memory Kinetics
+
+    Implements the RCI (Rate-Continuous Integral) formalism for
+    fission-track annealing.
+
+    This model:
+    - bypasses the Principle of Equivalent Time (PET)
+    - integrates the full thermal history in one call
+    - returns reduced track lengths in a format compatible
+      with the pyFTracks legacy pipeline
+
+    References:
+    Rufino & Guedes (2022)
+    Rufino et al. (2023, 2026)
+    """
+
+    def __init__(self,
+                 kinetic_parameters: dict,
+                 use_projected_track: bool = False,
+                 use_Cf_irradiation: bool = False):
+        """
+        Parameters
+        ----------
+        kinetic_parameters : dict
+            Dummy dictionary kept only for pyFTracks API compatibility.
+            RCI parameters are hard-coded here.
+        """
+
+        # RCI kinetic parameters (Rufino et al.)
+        self.model_parameters = {
+            "c0": -7.996631,
+            "c1":  0.136655,
+            "c2": -13.015017,
+            "c3": -0.627219,
+            "R":   1.987204258e-3,
+            "n":   0.5
+        }
+
+        # Stored only to satisfy pyFTracks interface
+        self._kinetic_parameters = kinetic_parameters
+
+        # Initialize base AnnealingModel
+        super(RCIModel, self).__init__(
+            use_projected_track,
+            use_Cf_irradiation
+        )
+
+    # --------------------------------------------------
+    # API compatibility with pyFTracks
+    # --------------------------------------------------
+    @property
+    def kinetic_parameters(self):
+        return self._kinetic_parameters
+
+    @kinetic_parameters.setter
+    def kinetic_parameters(self, value):
+        self._kinetic_parameters = value
+
+    @property
+    def rmr0(self):
+        """
+        Dummy rmr0 for API compatibility.
+        Not used by the RCI model.
+        """
+        return 0.0
+
+    # --------------------------------------------------
+    # CORE: annealing
+    # --------------------------------------------------
+    def annealing(self):
+        """
+        Compute reduced track lengths using the RCI engine.
+
+        This method completely bypasses PET and the internal
+        calculate_reduced_length / calculate_equivalent_time
+        recursion used by Fanning/Ketcham models.
+        """
+
+        # --------------------------------------------------
+        # 1) Build thermal history for RCI
+        # --------------------------------------------------
+        # pyFTracks history is stored as present -> past (Ma)
+        # RCI requires past -> present (seconds)
+
+        tdata = np.ascontiguousarray(
+            self.history.time[::-1] * _seconds_in_megayears,
+            dtype=np.float64
+        )
+
+        Tdata = np.ascontiguousarray(
+            self.history.temperature[::-1],
+            dtype=np.float64
+        )
+
+        # --------------------------------------------------
+        # 2) Unpack RCI kinetic parameters
+        # --------------------------------------------------
+        c0 = self.model_parameters["c0"]
+        c1 = self.model_parameters["c1"]
+        c2 = self.model_parameters["c2"]
+        c3 = self.model_parameters["c3"]
+        R  = self.model_parameters["R"]
+        n  = self.model_parameters["n"]
+
+        # --------------------------------------------------
+        # 3) Call RCI engine (single full-history integration)
+        # --------------------------------------------------
+        r_full = rci_annealing(
+            tdata,
+            Tdata,
+            c0, c1, c2, c3, R, n,
+            Nt=50,
+            Nu_local=40
+        )
+
+        # r_full has length N (nodes).
+        # Convert back to pyFTracks time convention (past -> present)
+        r_full = r_full[::-1]
+
+        # --------------------------------------------------
+        # 4) Adapt output to pyFTracks expectations
+        #     (sample RCI solution at thermal history nodes)
+        # --------------------------------------------------
+
+        # Total time span of the RCI integration
+        tf = tdata[-1]
+
+        # Time grid used internally by the RCI engine
+        t_rci = np.linspace(0.0, tf, r_full.shape[0])
+
+        # History times in pyFTracks convention (past -> present)
+        t_hist = tdata[::-1]
+
+        # Midpoints of the thermal history intervals
+        t_mid = 0.5 * (t_hist[:-1] + t_hist[1:])
+
+        # Sample r(t) at interval midpoints
+        r_mid = np.interp(t_mid, t_rci, r_full)
+
+        # One reduced length per interval
+        self.reduced_lengths = np.asarray(r_mid, dtype=np.float64)
+
+        r_threshold = 0.99  # ou 0.98; testável
+
+        self.first_node = 0
+        for i, r in enumerate(self.reduced_lengths):
+            if r < r_threshold:
+                self.first_node = max(i - 1, 0)
+                break
+
+
+        return self.reduced_lengths, self.first_node
