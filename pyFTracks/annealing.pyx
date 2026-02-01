@@ -696,10 +696,10 @@ class RCIModel(AnnealingModel):
 
         # RCI kinetic parameters (Rufino et al.)
         self.model_parameters = {
-            "c0": -7.996631,
-            "c1":  0.136655,
-            "c2": -13.015017,
-            "c3": -0.627219,
+            "c0": -9.449,
+            "c1":  0.1627,
+            "c2": -24.58,
+            "c3": -0.8626,
             "R":   1.987204258e-3,
             "n":   0.5
         }

@@ -15,7 +15,8 @@ with open(path.join(here, 'README.rst')) as f:
 
 extensions = [
     Extension("pyFTracks.annealing", ["pyFTracks/annealing.pyx"]),
-    Extension("pyFTracks.thermal_history", ["pyFTracks/thermal_history.pyx"])
+    Extension("pyFTracks.thermal_history", ["pyFTracks/thermal_history.pyx"]),
+    Extension("pyFTracks.rci_engine", ["pyFTracks/rci_engine.pyx"]), 
 ]
 
 with open('requirements.txt') as f:

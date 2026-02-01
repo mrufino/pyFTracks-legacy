@@ -1,64 +1,128 @@
-
 .. image:: https://raw.githubusercontent.com/rbeucher/pyFTracks/master/docs/images/logo.png
     :align: center
 
+=====================================================
+RCI-based annealing engine for pyFTracks (experimental)
+=====================================================
+
+This repository is a fork of **pyFTracks** that includes an experimental
+implementation of the **Rate Constant Integral (RCI)** framework for
+fission-track annealing, as developed in:
+
+- Rufino & Guedes (2022)
+- Rufino et al. (2023)
+- Rufino et al. (2026)
+
+The purpose of this fork is to provide a **controlled and reproducible
+comparison** between classical PET-based annealing models (e.g.
+Ketcham 1999, Ketcham 2007) and a **physically consistent,
+history-dependent kinetic formulation**, without modifying the original
+pyFTracks infrastructure.
+
+This implementation is intended for **forward modelling and diagnostic
+tests**. Geological interpretation and inverse modelling are not yet
+addressed.
+
+-----------------------------------------------------
+What is new in this fork
+-----------------------------------------------------
+
+- A standalone **RCI annealing engine implemented in C**;
+- A new ``RCIModel`` class fully integrated into the pyFTracks workflow;
+- Forward modelling **without the Principle of Equivalent Time (PET)**;
+- One-to-one comparisons with Ketcham1999/Ketcham2007 under identical
+  thermal histories and kinetic parameters;
+- Explicit preservation of thermal-history memory in non-parallel
+  (fanning-type) kinetic regimes.
+
+-----------------------------------------------------
+What is unchanged
+-----------------------------------------------------
+
+- Original pyFTracks thermal-history definitions
+  (e.g. ``WOLF1``–``WOLF5``);
+- Viewer, plotting and visualization tools;
+- AFT statistical routines (central age, pooled age, chi-square test);
+- Existing empirical annealing models implemented in pyFTracks.
+
+-----------------------------------------------------
+Example results: WOLF thermal histories
+-----------------------------------------------------
+
+The figures below illustrate forward-modelling comparisons between the
+RCI model and the Ketcham2007 model using standard WOLF thermal histories
+provided in the pyFTracks manual.
+
+These examples are intended as **diagnostic benchmarks**, not as
+geological interpretations. All simulations use identical thermal
+histories and kinetic parameters.
+
+.. image:: docs/images/wolf_lengths.png
+    :align: center
+    :width: 95%
+
+.. image:: docs/images/wolf_r_t.png
+    :align: center
+    :width: 95%
+
+In histories WOLF1–WOLF4, both models exhibit broadly consistent
+behavior, with systematic but moderate differences in predicted ages
+and track-length distributions.
+
+History WOLF5 highlights a stronger contrast between PET-based and
+RCI-based formulations, reflecting the impact of thermal-history
+dependence in non-parallel kinetic regimes.
+
+-----------------------------------------------------
+Status and scope
+-----------------------------------------------------
+
+- This implementation is **experimental** and under active development;
+- The current focus is forward modelling and controlled benchmarking;
+- Inverse modelling and geological applications will be addressed in
+  future work;
+- The code is provided to enable transparent comparison between kinetic
+  formulations within a common computational framework.
+
 ================================================
-Fission Track Modelling and Analysis with python
+Original pyFTracks README
 ================================================
 
-.. image:: https://img.shields.io/pypi/v/pyftracks.svg
-    :target: https://pypi.python.org/pypi/pyftracks
-    :alt: Pip
-.. image:: https://www.travis-ci.org/rbeucher/pyFTracks.svg?branch=master
-    :alt: Travis
-.. image:: https://mybinder.org/badge_logo.svg
-    :target: https://mybinder.org/v2/gh/rbeucher/pyFTracks.git/master
-    :alt: Logo
-
-
-pyFTracks is a Python utility which predicts Fission-track ages and track-lengths
-distributions for some given thermal-histories and given kinetic parameters.
-It is an open source version of programs such as AFTSolve or HeFty developped by
-Richard Ketcham and describe in Ketcham, 2000, 2005.
+pyFTracks is a Python utility which predicts fission-track ages and
+track-length distributions for given thermal histories and kinetic
+parameters. It is an open-source alternative to programs such as
+AFTSolve or HeFTy developed by Richard Ketcham and described in
+Ketcham (2000, 2005).
 
 We provide the code in the hope that it will be useful to the community.
 
-We have chosen Python to allow for interaction with the broad range of scientific libraries
-available in that language. Python is becoming a language of choice for teaching programming,
-it has also many advantages for Research Workflow, such as rapid prototyping and interactivity.
-
-
-.. image:: https://raw.githubusercontent.com/rbeucher/pyFTracks/master/docs/images/image1.png
-    :align: center
-
+We have chosen Python to allow interaction with the broad range of
+scientific libraries available in that language. Python is becoming a
+language of choice for teaching programming and for research workflows,
+such as rapid prototyping and interactivity.
 
 ------------
 Installation
 ------------
 
-The code is available on pypi and should work on any Linux distributions, MacOSX and Windows 10.
-To install it just run:
+The code is available on PyPI and should work on Linux, macOS and Windows.
+To install it, run:
 
 .. code:: bash
 
-  pip install pyFTracks
+    pip install pyFTracks
 
-in the console.
-
-You can install the package from the latest github source by doing:
+You can also install the package from the latest GitHub source:
 
 .. code:: bash
 
-  pip install git+https://github.com/rbeucher/pyFTracks.git
+    pip install git+https://github.com/rbeucher/pyFTracks.git
 
 ------------
 Dependencies
 ------------
 
-The pip install should take care of the dependencies, if not you might want to
-check that you have the following packages installed on your system:
-
-- Python >= 3.5.x
+- Python >= 3.5
 - Cython >= 0.29.14
 - matplotlib >= 3.1.1
 - numpy >= 1.17.4
@@ -69,24 +133,20 @@ check that you have the following packages installed on your system:
 -----------
 Recommended
 -----------
-We recommend using Jupyter:
 
-- jupyter
+- Jupyter Notebook
 
 ---------
 Licensing
 ---------
 
-pyFTracks is an open-source project licensed under the MiT License. See LICENSE.md for details.
+pyFTracks is an open-source project licensed under the MIT License.
+See LICENSE.md for details.
 
 ------------
-Contributing
-------------
-
--------
 Contact
--------
+------------
 
-Dr Romain BEUCHER, 
-The Australian National University
+Dr. Romain Beucher  
+The Australian National University  
 romain.beucher@anu.edu.au
