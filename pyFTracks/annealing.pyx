@@ -808,7 +808,7 @@ class RCIModel(AnnealingModel):
         # One reduced length per interval
         self.reduced_lengths = np.asarray(r_mid, dtype=np.float64)
 
-        r_threshold = 0.99  # ou 0.98; testável
+        r_threshold = 0.98  # ou 0.98; testável
 
         self.first_node = 0
         for i, r in enumerate(self.reduced_lengths):
